@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the ipyniivue gh-pages branch
+      # Step 1: Checkout ipyniivue gh-pages branch
       - name: Checkout ipyniivue gh-pages
         uses: actions/checkout@v4
         with:
@@ -19,24 +19,30 @@ jobs:
           path: ipyniivue-gh-pages
           fetch-depth: 1
 
-      # Step 2: Check out own gh-pages branch
-      - name: Checkout personal gh-pages
-        uses: actions/checkout@v4
-        with:
-          repository: AnthonyAndroulakis/ipyniivue-docs
-          ref: gh-pages
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          path: own-gh-pages
-          fetch-depth: 0
+      # Step 2: Clone your personal repository
+      - name: Clone personal repository
+        run: |
+          git clone https://github.com/AnthonyAndroulakis/ipyniivue-docs.git personal-gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-      # Step 3: Sync content from ipyniivue
+      # Step 3: Check if gh-pages branch exists, if not, create it
+      - name: Setup gh-pages branch
+        run: |
+          cd personal-gh-pages
+          git fetch origin gh-pages || true
+          git checkout gh-pages || git checkout --orphan gh-pages
+          git reset --hard
+          cd ..
+      
+      # Step 4: Sync content
       - name: Sync content
         run: |
-          rsync -a --delete ipyniivue-gh-pages/ own-gh-pages/
+          rsync -a --delete ipyniivue-gh-pages/ personal-gh-pages/
 
-      # Step 4: Commit and push changes
+      # Step 5: Commit and push changes
       - name: Commit and push changes
-        working-directory: own-gh-pages
+        working-directory: personal-gh-pages
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
@@ -47,3 +53,5 @@ jobs:
           else
             echo "No changes to commit"
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
