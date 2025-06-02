@@ -1,0 +1,49 @@
+name: Mirror ipyniivue gh-pages
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the ipyniivue gh-pages branch
+      - name: Checkout ipyniivue gh-pages
+        uses: actions/checkout@v4
+        with:
+          repository: niivue/ipyniivue
+          ref: gh-pages
+          path: ipyniivue-gh-pages
+          fetch-depth: 1
+
+      # Step 2: Check out own gh-pages branch
+      - name: Checkout personal gh-pages
+        uses: actions/checkout@v4
+        with:
+          repository: AnthonyAndroulakis/ipyniivue-docs
+          ref: gh-pages
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          path: own-gh-pages
+          fetch-depth: 0
+
+      # Step 3: Sync content from ipyniivue
+      - name: Sync content
+        run: |
+          rsync -a --delete ipyniivue-gh-pages/ own-gh-pages/
+
+      # Step 4: Commit and push changes
+      - name: Commit and push changes
+        working-directory: own-gh-pages
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Update from ipyniivue gh-pages"
+            git push origin gh-pages
+          else
+            echo "No changes to commit"
+          fi
