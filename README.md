@@ -1,2 +1,2 @@
-# niivue-docs
+# ipyniivue-docs
 test
